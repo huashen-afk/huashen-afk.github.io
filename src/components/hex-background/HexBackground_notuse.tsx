@@ -30,7 +30,7 @@ function drawFlatHex(
   ctx.stroke()
 }
 
-export function HexBackground() {
+export function HexBackground_notuse() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
