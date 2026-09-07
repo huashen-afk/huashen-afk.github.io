@@ -38,17 +38,19 @@ export function HexBackground() {
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
+    const view = canvas
+    const brush = ctx
 
     function paint() {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
       const width = window.innerWidth
       const height = window.innerHeight
-      canvas.width = Math.floor(width * dpr)
-      canvas.height = Math.floor(height * dpr)
-      canvas.style.width = `${width}px`
-      canvas.style.height = `${height}px`
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      ctx.clearRect(0, 0, width, height)
+      view.width = Math.floor(width * dpr)
+      view.height = Math.floor(height * dpr)
+      view.style.width = `${width}px`
+      view.style.height = `${height}px`
+      brush.setTransform(dpr, 0, 0, dpr, 0, 0)
+      brush.clearRect(0, 0, width, height)
 
       const side = HEX_SIDE
       const originX = side
@@ -56,10 +58,10 @@ export function HexBackground() {
       const qMin = Math.floor((-originX - side * 2) / (side * 1.5)) - 1
       const qMax = Math.ceil((width - originX + side * 2) / (side * 1.5)) + 1
 
-      ctx.strokeStyle = STROKE
-      ctx.lineWidth = 1
-      ctx.lineJoin = 'miter'
-      ctx.lineCap = 'square'
+      brush.strokeStyle = STROKE
+      brush.lineWidth = 1
+      brush.lineJoin = 'miter'
+      brush.lineCap = 'square'
 
       for (let q = qMin; q <= qMax; q += 1) {
         const yBase = (SQRT3 / 2) * q
@@ -67,7 +69,7 @@ export function HexBackground() {
         const rMax = Math.ceil(((height - originY) / side - yBase) / SQRT3) + 1
         for (let r = rMin; r <= rMax; r += 1) {
           const { x, y } = axialToPixel(q, r, side)
-          drawFlatHex(ctx, originX + x, originY + y, side)
+          drawFlatHex(brush, originX + x, originY + y, side)
         }
       }
     }
@@ -76,13 +78,13 @@ export function HexBackground() {
     window.addEventListener('resize', paint)
 
     function handlePointerMove(event: PointerEvent) {
-      canvas.style.setProperty('--mx', `${event.clientX}px`)
-      canvas.style.setProperty('--my', `${event.clientY}px`)
-      canvas.dataset.active = 'true'
+      view.style.setProperty('--mx', `${event.clientX}px`)
+      view.style.setProperty('--my', `${event.clientY}px`)
+      view.dataset.active = 'true'
     }
 
     function handlePointerLeave() {
-      canvas.dataset.active = 'false'
+      view.dataset.active = 'false'
     }
 
     window.addEventListener('pointermove', handlePointerMove)
