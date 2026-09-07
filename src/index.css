@@ -8,9 +8,49 @@ body,
 }
 
 .page {
+  position: relative;
   display: flex;
   width: 100%;
   height: 100%;
+}
+
+.hex-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  z-index: 0;
+  --mx: -9999px;
+  --my: -9999px;
+  --spot-radius: 64px;
+  opacity: 0;
+  -webkit-mask-image: radial-gradient(
+    circle var(--spot-radius) at var(--mx) var(--my),
+    #000 0%,
+    #000 35%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    circle var(--spot-radius) at var(--mx) var(--my),
+    #000 0%,
+    #000 35%,
+    transparent 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.hex-bg[data-active='true'] {
+  opacity: 1;
+}
+
+.page-brand,
+.page-main {
+  position: relative;
+  z-index: 1;
+  background: transparent;
 }
 
 .page-brand {
