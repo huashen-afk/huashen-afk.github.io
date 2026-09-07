@@ -1,15 +1,18 @@
 import { useEffect, useRef } from 'react'
 
 const PARTICLE_COLOR = '#f4f1ea'
-const SPRING = 0.022 // 弹力
+const GRADIENT_FROM = '#b8e7ff' // 淡蓝
+const GRADIENT_TO = '#7c4dff' // 紫
+const GRADIENT_PERIOD_MS = 4000
+const SPRING = 0.033// 弹力
 const FRICTION = 0.93 // 摩擦力
 const REPEL_RADIUS = 450 // 排斥半径
 const REPEL_STRENGTH = 4 // 排斥强度
 const DROP_RATE = 0.35 // 随机缺失占比
 const JITTER_RATE = 0.2 // 抖动采样占比
-const JITTER_BASE_MS = 1000
-const JITTER_EXTRA_MS = 500
-const JITTER_CELLS = 0.4
+const JITTER_BASE_MS = 1000//抖动基础时间
+const JITTER_EXTRA_MS = 500//抖动时间
+const JITTER_CELLS = 0.4//抖动单元格大小
 const CARDINAL = [
   { x: 1, y: 0 },
   { x: -1, y: 0 },
@@ -153,24 +156,29 @@ function fillAngularGlyph(
   ctx.restore()
 }
 
-function drawHsMask(
-  ctx: CanvasRenderingContext2D,
-  layerWidth: number,
-  layerHeight: number,
-  width: number,
-  height: number,
-  dpr: number,
-) {
-  const glyphHeight = Math.min(width * 0.42, height * 0.48) * dpr
+function getHsLayout(width: number, height: number) {
+  const glyphHeight = Math.min(width * 0.42, height * 0.48)
   const unit = glyphHeight / 4
   const glyphWidth = unit * 1.2
   const sUnit = glyphWidth / 2
   const sHeight = sUnit * 4
   const gap = unit * 1.3
-  const startX = (layerWidth - (glyphWidth + gap + glyphWidth)) / 2
-  const originY = (layerHeight - glyphHeight) / 2
-  const sOriginY = originY + glyphHeight - sHeight
-  const strokeWidth = Math.max(2 * (layerWidth / Math.max(width, 1)), glyphHeight * 0.2)
+  const totalWidth = glyphWidth + gap + glyphWidth
+  const startX = (width - totalWidth) / 2
+  const originY = (height - glyphHeight) / 2
+  return { glyphHeight, unit, glyphWidth, sUnit, sHeight, gap, startX, originY, totalWidth }
+}
+
+function drawHsMask(
+  ctx: CanvasRenderingContext2D,
+  layerWidth: number,
+  layerHeight: number,
+  width: number,
+) {
+  const layout = getHsLayout(layerWidth, layerHeight)
+  const { unit, glyphWidth, sUnit, sHeight, gap, startX, originY } = layout
+  const sOriginY = originY + layout.glyphHeight - sHeight
+  const strokeWidth = Math.max(2 * (layerWidth / Math.max(width, 1)), layout.glyphHeight * 0.2)
 
   ctx.clearRect(0, 0, layerWidth, layerHeight)
   drawAngularGlyph(ctx, ANGULAR_H, startX, originY, sUnit, unit, strokeWidth)
@@ -223,7 +231,7 @@ function sampleHsGrid(width: number, height: number, dpr: number, cellSize: numb
   const ctx = layer.getContext('2d', { willReadFrequently: true })
   if (!ctx) return []
 
-  drawHsMask(ctx, layer.width, layer.height, width, height, dpr)
+  drawHsMask(ctx, layer.width, layer.height, width)
   const image = ctx.getImageData(0, 0, layer.width, layer.height).data
   const points: SamplePoint[] = []
   const half = cellSize / 2
@@ -255,18 +263,37 @@ export function HsParticles() {
 
     const mouse = { x: 0, y: 0, active: false }
     let particles: Particle[] = []
+    let gradX0 = 0
+    let gradY0 = 0
+    let gradX1 = 0
+    let gradY1 = 0
+    let gradSpanX = 0
+    let gradSpanY = 0
+    let viewWidth = 0
+    let viewHeight = 0
+    let repelRadius = REPEL_RADIUS
     let frame = 0
     let running = true
 
     function syncCanvasSize() {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      const width = window.innerWidth
-      const height = window.innerHeight
+      const bounds = view.getBoundingClientRect()
+      const width = Math.max(1, Math.round(bounds.width))
+      const height = Math.max(1, Math.round(bounds.height))
+      viewWidth = width
+      viewHeight = height
       view.width = Math.floor(width * dpr)
       view.height = Math.floor(height * dpr)
-      view.style.width = `${width}px`
-      view.style.height = `${height}px`
       brush.setTransform(dpr, 0, 0, dpr, 0, 0)
+      const layout = getHsLayout(width, height)
+      const padX = layout.sUnit * 0.7
+      gradX0 = layout.startX - padX
+      gradY0 = layout.originY
+      gradX1 = layout.startX + layout.totalWidth + padX
+      gradY1 = layout.originY + layout.glyphHeight
+      gradSpanX = gradX1 - gradX0
+      gradSpanY = gradY1 - gradY0
+      repelRadius = Math.min(width, height) * 0.55
 
       const size = Math.max(2, Math.round(Math.min(width, height) * 0.0026))
       const cellSize = size * 1.6
@@ -299,8 +326,8 @@ export function HsParticles() {
 
     function drawFrame() {
       if (!running) return
-      const width = window.innerWidth
-      const height = window.innerHeight
+      const width = viewWidth
+      const height = viewHeight
       const now = performance.now()
       brush.clearRect(0, 0, width, height)
       brush.fillStyle = PARTICLE_COLOR
@@ -313,8 +340,8 @@ export function HsParticles() {
           const dx = particle.x - mouse.x
           const dy = particle.y - mouse.y
           const dist = Math.hypot(dx, dy) || 0.001
-          if (dist < REPEL_RADIUS) {
-            const falloff = 1 - dist / REPEL_RADIUS
+          if (dist < repelRadius) {
+            const falloff = 1 - dist / repelRadius
             const force = falloff * falloff * REPEL_STRENGTH
             particle.vx += (dx / dist) * force
             particle.vy += (dy / dist) * force
@@ -332,12 +359,34 @@ export function HsParticles() {
         brush.fillRect(particle.x - half, particle.y - half, particle.size, particle.size)
       }
 
+      const phase = (now % GRADIENT_PERIOD_MS) / GRADIENT_PERIOD_MS
+      const periodX = gradSpanX * 2
+      const periodY = gradSpanY * 2
+      const shiftX = periodX * phase
+      const shiftY = periodY * phase
+      const tint = brush.createLinearGradient(
+        gradX0 - shiftX,
+        gradY0 - shiftY,
+        gradX0 + periodX * 2 - shiftX,
+        gradY0 + periodY * 2 - shiftY,
+      )
+      tint.addColorStop(0, GRADIENT_FROM)
+      tint.addColorStop(0.25, GRADIENT_TO)
+      tint.addColorStop(0.5, GRADIENT_FROM)
+      tint.addColorStop(0.75, GRADIENT_TO)
+      tint.addColorStop(1, GRADIENT_FROM)
+      brush.globalCompositeOperation = 'source-in'
+      brush.fillStyle = tint
+      brush.fillRect(0, 0, width, height)
+      brush.globalCompositeOperation = 'source-over'
+
       frame = window.requestAnimationFrame(drawFrame)
     }
 
     function handlePointerMove(event: PointerEvent) {
-      mouse.x = event.clientX
-      mouse.y = event.clientY
+      const bounds = view.getBoundingClientRect()
+      mouse.x = event.clientX - bounds.left
+      mouse.y = event.clientY - bounds.top
       mouse.active = true
     }
 
@@ -345,18 +394,18 @@ export function HsParticles() {
       mouse.active = false
     }
 
-    syncCanvasSize()
+    const observer = new ResizeObserver(syncCanvasSize)
+    observer.observe(view)
     frame = window.requestAnimationFrame(drawFrame)
-    window.addEventListener('resize', syncCanvasSize)
-    window.addEventListener('pointermove', handlePointerMove)
-    window.addEventListener('pointerleave', handlePointerLeave)
+    view.addEventListener('pointermove', handlePointerMove)
+    view.addEventListener('pointerleave', handlePointerLeave)
 
     return () => {
       running = false
       window.cancelAnimationFrame(frame)
-      window.removeEventListener('resize', syncCanvasSize)
-      window.removeEventListener('pointermove', handlePointerMove)
-      window.removeEventListener('pointerleave', handlePointerLeave)
+      observer.disconnect()
+      view.removeEventListener('pointermove', handlePointerMove)
+      view.removeEventListener('pointerleave', handlePointerLeave)
     }
   }, [])
 

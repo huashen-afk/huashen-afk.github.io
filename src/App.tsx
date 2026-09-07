@@ -2,9 +2,12 @@ import { HsParticles } from './components/hs-particles/HsParticles'
 
 function App() {
   return (
-    <main className="logo-stage">
-      <HsParticles />
-    </main>
+    <div className="page">
+      <aside className="page-brand">
+        <HsParticles />
+      </aside>
+      <main className="page-main" />
+    </div>
   )
 }
 
