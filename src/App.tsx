@@ -13,6 +13,9 @@ function App() {
         </div>
       </section>
       <main className="page-main" />
+      <footer className="page-footer">
+        <p className="page-footer-text">测试用文字</p>
+      </footer>
     </div>
   )
 }
