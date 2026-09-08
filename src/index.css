@@ -145,3 +145,73 @@ body {
   height: 100%;
   display: block;
 }
+
+.linedraw-track {
+  position: relative;
+  width: 1px;
+  height: 100%;
+  min-height: 100vh;
+  margin: 0 auto;
+  transform-origin: top center;
+}
+
+.linedraw-line {
+  width: 1px;
+  background: #d8d2c8;
+}
+
+.page-main-shapes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  padding: 48px 0;
+}
+
+.circledraw-wrap {
+  display: block;
+  margin: 0 auto;
+  line-height: 0;
+}
+
+.circledraw-svg {
+  display: block;
+  overflow: visible;
+}
+
+.circledraw-circle {
+  stroke-linecap: butt;
+}
+
+.rhombusdraw-wrap {
+  display: block;
+  line-height: 0;
+  transform-origin: center center;
+}
+
+.rhombusdraw-svg {
+  display: block;
+  overflow: visible;
+}
+
+.rhombusdraw-path {
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+}
+
+.triangledraw-wrap {
+  display: block;
+  line-height: 0;
+  transform-origin: center center;
+}
+
+.triangledraw-svg {
+  display: block;
+  overflow: visible;
+}
+
+.triangledraw-path {
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+}

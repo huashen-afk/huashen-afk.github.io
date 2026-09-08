@@ -1,5 +1,9 @@
 import { HsParticles } from './components/hs-particles/HsParticles'
 import FluidGlass from './components/fluid-glass/FluidGlass'
+import { LineDraw } from './components/drawTree/LineDraw'
+import { CircleDraw } from './components/drawTree/CircleDraw'
+import { RhombusDraw } from './components/drawTree/RhombusDraw'
+import { TriangleDraw } from './components/drawTree/TriangleDraw'
 
 function App() {
   return (
@@ -12,7 +16,14 @@ function App() {
           <HsParticles />
         </div>
       </section>
-      <main className="page-main" />
+      <main className="page-main">
+        <LineDraw />
+        <div className="page-main-shapes">
+          <CircleDraw radius={56} />
+          <RhombusDraw side={64} minAngle={30} />
+          <TriangleDraw />
+        </div>
+      </main>
       <footer className="page-footer">
         <p className="page-footer-text">测试用文字</p>
       </footer>
