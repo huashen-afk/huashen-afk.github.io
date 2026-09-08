@@ -1,14 +1,18 @@
 import { HsParticles } from './components/hs-particles/HsParticles'
+import FluidGlass from './components/fluid-glass/FluidGlass'
 
 function App() {
   return (
     <div className="page">
-      <aside className="page-brand">
-        <HsParticles />
-      </aside>
-      <main className="page-main">
-        <p className="test-copy">这是一段测试文字</p>
-      </main>
+      <div className="fluid-glass-overlay">
+        <FluidGlass />
+      </div>
+      <section className="page-hero">
+        <div className="page-brand">
+          <HsParticles />
+        </div>
+      </section>
+      <main className="page-main" />
     </div>
   )
 }
