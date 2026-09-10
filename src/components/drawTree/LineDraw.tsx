@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef } from 'react'
-import { DRAW_SPEED, STROKE, useRegisterCanvas } from './sceneRegistry'
+import { DRAW_SPEED, STROKE, useDrawGate, useRegisterCanvas } from './sceneRegistry'
 
 interface LineDrawProps {
   /** 旋转角度（度），0 为竖直向下 */
@@ -8,8 +8,12 @@ interface LineDrawProps {
   dashed?: boolean
   /** 虚线步长（实线段长度，单位 px；间隙同长） */
   dashStep?: number
-  /** 线段长度（px），默认一屏高 */
+  /** 线段长度（px）；省略时近水平用视口宽，近竖直用视口高 */
   length?: number
+  /** 本组件绘制 id，供其他组件 after 引用 */
+  drawId?: string
+  /** 前驱 drawId；省略则立即按默认逻辑绘制 */
+  after?: string
 }
 
 export function LineDraw({
@@ -17,10 +21,13 @@ export function LineDraw({
   dashed = false,
   dashStep = 8,
   length,
+  drawId,
+  after,
 }: LineDrawProps) {
   const id = useId()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawnRef = useRef(0)
+  const { canDrawRef, notifyComplete } = useDrawGate(drawId, after)
   useRegisterCanvas(id, canvasRef)
 
   useEffect(() => {
@@ -33,8 +40,12 @@ export function LineDraw({
     let last = performance.now()
 
     function layout() {
-      const L = Math.max(1, length ?? window.innerHeight)
       const rad = (rotation * Math.PI) / 180
+      const horiz = Math.abs(Math.sin(rad)) >= Math.abs(Math.cos(rad))
+      const L = Math.max(
+        1,
+        length ?? (horiz ? window.innerWidth : window.innerHeight),
+      )
       const dx = Math.sin(rad) * L
       const dy = Math.cos(rad) * L
       const pad = 2
@@ -75,7 +86,7 @@ export function LineDraw({
       const iy2 = Math.min(rect.bottom, vh)
       const isVisible = ix2 > ix1 && iy2 > iy1
 
-      if (isVisible) {
+      if (canDrawRef.current && isVisible) {
         const majorX = rect.width >= rect.height
         const visibleSpan = majorX ? ix2 - ix1 : iy2 - iy1
         const totalSpan = Math.max(1, majorX ? rect.width : rect.height)
@@ -84,6 +95,8 @@ export function LineDraw({
           drawnRef.current = Math.min(target, drawnRef.current + DRAW_SPEED * dt)
         }
       }
+
+      if (drawnRef.current >= geo.L) notifyComplete()
 
       const ctx = canvas.getContext('2d')
       if (ctx) {
@@ -117,7 +130,7 @@ export function LineDraw({
       running = false
       window.cancelAnimationFrame(frame)
     }
-  }, [rotation, dashed, dashStep, length])
+  }, [rotation, dashed, dashStep, length, canDrawRef, notifyComplete])
 
   return <canvas ref={canvasRef} className="linedraw-canvas" aria-hidden />
 }

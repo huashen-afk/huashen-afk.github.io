@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef } from 'react'
-import { DRAW_SPEED, STROKE, useRegisterCanvas } from './sceneRegistry'
+import { DRAW_SPEED, STROKE, useDrawGate, useRegisterCanvas } from './sceneRegistry'
 
 interface RhombusDrawProps {
   /** 边长（px） */
@@ -10,6 +10,10 @@ interface RhombusDrawProps {
   clockwise?: boolean
   /** 图形自身旋转角度（度），默认 0 */
   rotation?: number
+  /** 本组件绘制 id，供其他组件 after 引用 */
+  drawId?: string
+  /** 前驱 drawId；省略则立即按默认逻辑绘制 */
+  after?: string
 }
 
 function buildRhombusPoints(side: number, minAngle: number, rotationDeg: number, clockwise: boolean) {
@@ -90,10 +94,13 @@ export function RhombusDraw({
   minAngle = 30,
   clockwise = true,
   rotation = 0,
+  drawId,
+  after,
 }: RhombusDrawProps) {
   const id = useId()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawnRef = useRef(0)
+  const { canDrawRef, notifyComplete } = useDrawGate(drawId, after)
   useRegisterCanvas(id, canvasRef)
 
   const geo = useMemo(
@@ -130,9 +137,11 @@ export function RhombusDraw({
       const isVisible =
         rect.right > 0 && rect.left < vw && rect.bottom > 0 && rect.top < vh
 
-      if (isVisible && drawnRef.current < perimeter) {
+      if (canDrawRef.current && isVisible && drawnRef.current < perimeter) {
         drawnRef.current = Math.min(perimeter, drawnRef.current + DRAW_SPEED * dt)
       }
+
+      if (drawnRef.current >= perimeter) notifyComplete()
 
       const ctx = canvas.getContext('2d')
       if (ctx) {
@@ -152,7 +161,7 @@ export function RhombusDraw({
       running = false
       window.cancelAnimationFrame(frame)
     }
-  }, [geo])
+  }, [geo, canDrawRef, notifyComplete])
 
   return <canvas ref={canvasRef} className="rhombusdraw-canvas" aria-hidden />
 }

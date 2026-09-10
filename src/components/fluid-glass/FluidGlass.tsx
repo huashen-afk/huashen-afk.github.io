@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import * as THREE from 'three'
 import { Canvas, createPortal, useFrame } from '@react-three/fiber'
-import { MeshTransmissionMaterial, useFBO, useGLTF } from '@react-three/drei'
+import { MeshTransmissionMaterial, useFBO } from '@react-three/drei'
 import { forEachSceneLayer } from '../drawTree/sceneRegistry'
 
-const GLB = '/assets/3d/bar.glb'
-const GEOMETRY_KEY = 'Cube'
 const PAGE_SELECTOR = '.page'
 const LOGO_SELECTOR = '.hs-canvas'
 const BG = '#120f17'
@@ -19,12 +17,44 @@ const ROUGHNESS = 0
 const BAR_WIDTH_RATIO = 0.6
 const BAR_THICKNESS_RATIO = 0.42
 const BAR_TOP_GAP_PX = 28
+const BAR_INSET_TOP_PX = 2//为了弥补玻璃的边缘对齐，需要内缩
+const BAR_INSET_BOTTOM_PX = 1//为了弥补玻璃的边缘对齐，需要内缩
+const RADIUS_RATIO = 0.5//玻璃条圆角比例，与tab圆角一致
 
 const NAV_ITEMS: { label: string; link: string }[] = [
   { label: '主页', link: '' },
   { label: '项目', link: '' },
   { label: '日志', link: '' },
 ]
+
+function createStadiumGeometry(width: number, height: number, depth: number) {
+  const w = Math.max(0.001, width)
+  const h = Math.max(0.001, height)
+  const d = Math.max(0.001, depth)
+  const r = Math.min(w, h) * RADIUS_RATIO
+  const x0 = -w / 2
+  const y0 = -h / 2
+
+  const shape = new THREE.Shape()
+  shape.moveTo(x0 + r, y0)
+  shape.lineTo(x0 + w - r, y0)
+  shape.absarc(x0 + w - r, y0 + r, r, -Math.PI / 2, 0, false)
+  shape.lineTo(x0 + w, y0 + h - r)
+  shape.absarc(x0 + w - r, y0 + h - r, r, 0, Math.PI / 2, false)
+  shape.lineTo(x0 + r, y0 + h)
+  shape.absarc(x0 + r, y0 + h - r, r, Math.PI / 2, Math.PI, false)
+  shape.lineTo(x0, y0 + r)
+  shape.absarc(x0 + r, y0 + r, r, Math.PI, Math.PI * 1.5, false)
+
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: d,
+    bevelEnabled: false,
+    curveSegments: 24,
+  })
+  geometry.translate(0, 0, -d / 2)
+  geometry.computeVertexNormals()
+  return geometry
+}
 
 function paintPageBackground(ctx: CanvasRenderingContext2D, width: number, height: number) {
   const page = document.querySelector<HTMLElement>(PAGE_SELECTOR)
@@ -140,25 +170,12 @@ function GlassBar({ hitRef }: { hitRef: RefObject<HTMLDivElement | null> }) {
   const ref = useRef<THREE.Mesh>(null!)
   const sceneMeshRef = useRef<THREE.Mesh>(null!)
   const sceneMatRef = useRef<THREE.MeshBasicMaterial>(null!)
-  const { nodes } = useGLTF(GLB)
-  const geometry = (nodes[GEOMETRY_KEY] as THREE.Mesh | undefined)?.geometry
   const buffer = useFBO({ samples: 0 })
   const [scene] = useState(() => new THREE.Scene())
   const sceneTextureRef = useRef<THREE.CanvasTexture | null>(null)
   const sceneCanvasRef = useRef<HTMLCanvasElement | null>(null)
-  const geoSizeRef = useRef({ x: 1, y: 1, z: 1 })
-
-  useEffect(() => {
-    if (!geometry) return
-    geometry.computeBoundingBox()
-    const box = geometry.boundingBox
-    if (!box) return
-    geoSizeRef.current = {
-      x: box.max.x - box.min.x || 1,
-      y: box.max.y - box.min.y || 1,
-      z: box.max.z - box.min.z || 1,
-    }
-  }, [geometry])
+  const geoKeyRef = useRef('')
+  const geometryRef = useRef<THREE.BufferGeometry>(createStadiumGeometry(1, 0.2, 0.08))
 
   useEffect(() => {
     const canvas = document.createElement('canvas')
@@ -176,6 +193,7 @@ function GlassBar({ hitRef }: { hitRef: RefObject<HTMLDivElement | null> }) {
       texture.dispose()
       sceneTextureRef.current = null
       sceneCanvasRef.current = null
+      geometryRef.current.dispose()
     }
   }, [])
 
@@ -184,19 +202,30 @@ function GlassBar({ hitRef }: { hitRef: RefObject<HTMLDivElement | null> }) {
     const { gl, viewport, camera } = state
     const v = viewport.getCurrentViewport(camera, [0, 0, 15])
     const hit = hitRef.current
-    const hitH = hit?.offsetHeight || 64
-    const hitW = hit?.offsetWidth || window.innerWidth * BAR_WIDTH_RATIO
-    const centerFromTop = BAR_TOP_GAP_PX + hitH / 2
-    const barY = v.height / 2 - (centerFromTop / window.innerHeight) * v.height
+    const rect = hit?.getBoundingClientRect()
+    const rawH = rect?.height || hit?.offsetHeight || 64
+    const hitW = rect?.width || hit?.offsetWidth || window.innerWidth * BAR_WIDTH_RATIO
+    const hitH = Math.max(1, rawH - BAR_INSET_TOP_PX - BAR_INSET_BOTTOM_PX)
+    const centerY = rect
+      ? rect.top + BAR_INSET_TOP_PX + hitH / 2
+      : BAR_TOP_GAP_PX + BAR_INSET_TOP_PX + hitH / 2
+    const barY = v.height / 2 - (centerY / window.innerHeight) * v.height
+
+    const worldW = (hitW / window.innerWidth) * v.width
+    const worldH = (hitH / window.innerHeight) * v.height
+    const worldD = worldH * BAR_THICKNESS_RATIO
+    const key = `${worldW.toFixed(4)}:${worldH.toFixed(4)}:${worldD.toFixed(4)}`
+    if (key !== geoKeyRef.current) {
+      geoKeyRef.current = key
+      const next = createStadiumGeometry(worldW, worldH, worldD)
+      const prev = geometryRef.current
+      geometryRef.current = next
+      ref.current.geometry = next
+      if (prev !== next) prev.dispose()
+    }
 
     ref.current.position.set(0, barY, 15)
-
-    const geo = geoSizeRef.current
-    const scaleX = ((hitW / window.innerWidth) * v.width) / geo.x
-    const targetWorldH = ((hitH * 0.96) / window.innerHeight) * v.height
-    const scaleZ = targetWorldH / geo.z
-    const scaleY = scaleZ * BAR_THICKNESS_RATIO
-    ref.current.scale.set(scaleX, scaleY, scaleZ)
+    ref.current.scale.set(1, 1, 1)
 
     const sceneCanvas = sceneCanvasRef.current
     const sceneTexture = sceneTextureRef.current
@@ -238,7 +267,7 @@ function GlassBar({ hitRef }: { hitRef: RefObject<HTMLDivElement | null> }) {
         </mesh>,
         scene,
       )}
-      <mesh ref={ref} rotation-x={Math.PI / 2} geometry={geometry}>
+      <mesh ref={ref} geometry={geometryRef.current}>
         <MeshTransmissionMaterial
           buffer={buffer.texture}
           transmission={TRANSMISSION}
@@ -255,7 +284,5 @@ function GlassBar({ hitRef }: { hitRef: RefObject<HTMLDivElement | null> }) {
     </>
   )
 }
-
-useGLTF.preload(GLB)
 
 export default FluidGlass

@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef } from 'react'
-import { DRAW_SPEED, STROKE, useRegisterCanvas } from './sceneRegistry'
+import { DRAW_SPEED, STROKE, useDrawGate, useRegisterCanvas } from './sceneRegistry'
 
 interface Point {
   x: number
@@ -15,6 +15,10 @@ interface CurveDrawProps {
   curvature?: number
   /** 曲率变化位置，0–1，控制点在弦上的投影 */
   bendAt?: number
+  /** 本组件绘制 id，供其他组件 after 引用 */
+  drawId?: string
+  /** 前驱 drawId；省略则立即按默认逻辑绘制 */
+  after?: string
 }
 
 function clamp01(v: number) {
@@ -56,10 +60,13 @@ export function CurveDraw({
   to = { x: 160, y: 0 },
   curvature = 48,
   bendAt = 0.5,
+  drawId,
+  after,
 }: CurveDrawProps) {
   const id = useId()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawnRef = useRef(0)
+  const { canDrawRef, notifyComplete } = useDrawGate(drawId, after)
   useRegisterCanvas(id, canvasRef)
 
   useEffect(() => {
@@ -109,9 +116,11 @@ export function CurveDraw({
       const isVisible =
         rect.right > 0 && rect.left < vw && rect.bottom > 0 && rect.top < vh
 
-      if (isVisible && drawnRef.current < totalLen) {
+      if (canDrawRef.current && isVisible && drawnRef.current < totalLen) {
         drawnRef.current = Math.min(totalLen, drawnRef.current + DRAW_SPEED * dt)
       }
+
+      if (drawnRef.current >= totalLen) notifyComplete()
 
       const ctx = canvas.getContext('2d')
       if (ctx) {
@@ -141,7 +150,7 @@ export function CurveDraw({
       running = false
       window.cancelAnimationFrame(frame)
     }
-  }, [from.x, from.y, to.x, to.y, curvature, bendAt])
+  }, [from.x, from.y, to.x, to.y, curvature, bendAt, canDrawRef, notifyComplete])
 
   return <canvas ref={canvasRef} className="curvedraw-canvas" aria-hidden />
 }

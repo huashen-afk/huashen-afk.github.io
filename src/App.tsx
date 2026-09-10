@@ -1,10 +1,16 @@
 import { HsParticles } from './components/hs-particles/HsParticles'
 import FluidGlass from './components/fluid-glass/FluidGlass'
 import { LineDraw } from './components/drawTree/LineDraw'
-import { CircleDraw } from './components/drawTree/CircleDraw'
 import { RhombusDraw } from './components/drawTree/RhombusDraw'
-import { TriangleDraw } from './components/drawTree/TriangleDraw'
-import { CurveDraw } from './components/drawTree/CurveDraw'
+
+const HERO_TICKS = [
+  { left: 14, length: 36, rhombus: true },
+  { left: 26, length: 64 },
+  { left: 41, length: 44 },
+  { left: 58, length: 80 },
+  { left: 72, length: 52 },
+  { left: 88, length: 70 },
+] as const
 
 function App() {
   return (
@@ -16,24 +22,28 @@ function App() {
         <div className="page-brand">
           <HsParticles />
         </div>
-      </section>
-      <main className="page-main">
-        <LineDraw />
-        <div className="page-main-shapes">
-          <CircleDraw radius={56} />
-          <RhombusDraw side={64} minAngle={30} />
-          <TriangleDraw />
-          <CurveDraw
-            from={{ x: 0, y: 40 }}
-            to={{ x: 180, y: 40 }}
-            curvature={56}
-            bendAt={0.45}
-          />
+        <div className="page-hero-rail">
+          <div className="page-hero-line">
+            <LineDraw rotation={90} />
+          </div>
+          <div className="page-hero-ticks">
+            {HERO_TICKS.map((tick) => (
+              <div
+                key={`${tick.left}-${tick.length}`}
+                className="page-hero-tick"
+                style={{ left: `${tick.left}%` }}
+              >
+                <LineDraw length={tick.length} />
+                {'rhombus' in tick && tick.rhombus ? (
+                  <div className="page-hero-tick-shape">
+                    <RhombusDraw side={16} minAngle={60} />
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
         </div>
-      </main>
-      <footer className="page-footer">
-        <p className="page-footer-text">测试用文字</p>
-      </footer>
+      </section>
     </div>
   )
 }
