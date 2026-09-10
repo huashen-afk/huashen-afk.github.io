@@ -84,8 +84,6 @@ body {
 
 .topology-mark {
   position: relative;
-  width: 220px;
-  height: 160px;
   margin: 28px auto 0;
   flex-shrink: 0;
 }
@@ -93,6 +91,13 @@ body {
 .topology-mark-item {
   position: absolute;
   line-height: 0;
+}
+
+.topology-eject-flight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
 }
 
 .draw-follow-wrap {
@@ -178,7 +183,10 @@ body {
 .circledraw-canvas,
 .rhombusdraw-canvas,
 .triangledraw-canvas,
-.curvedraw-canvas {
+.curvedraw-canvas,
+.cubedraw-canvas,
+.hypercubedraw-canvas,
+.penteractdraw-canvas {
   display: block;
   margin: 0 auto;
   image-rendering: pixelated;

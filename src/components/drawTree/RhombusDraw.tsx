@@ -16,6 +16,10 @@ interface RhombusDrawProps {
   after?: string
   /** 跟随鼠标旋转倍数；0 关闭，>0 开启（角 = 鼠标方位角 × 该值） */
   followRotate?: number
+  /** 为 true 时跳过渐进，直接完整显示并标记完成 */
+  instant?: boolean
+  /** 描边颜色 */
+  strokeColor?: string
 }
 
 function buildRhombusPoints(side: number, minAngle: number, rotationDeg: number, clockwise: boolean) {
@@ -99,6 +103,8 @@ export function RhombusDraw({
   drawId,
   after,
   followRotate = 0,
+  instant = false,
+  strokeColor = STROKE,
 }: RhombusDrawProps) {
   const id = useId()
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -116,7 +122,7 @@ export function RhombusDraw({
     const canvas = canvasRef.current
     if (!canvas) return
 
-    drawnRef.current = 0
+    drawnRef.current = instant ? geo.perimeter : 0
     let frame = 0
     let running = true
     let last = performance.now()
@@ -151,7 +157,7 @@ export function RhombusDraw({
       if (ctx) {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
         ctx.clearRect(0, 0, width, height)
-        ctx.strokeStyle = STROKE
+        ctx.strokeStyle = strokeColor
         ctx.lineWidth = 1
         ctx.lineJoin = 'miter'
         drawProgressivePolygon(ctx, points, drawnRef.current, true)
@@ -165,7 +171,7 @@ export function RhombusDraw({
       running = false
       window.cancelAnimationFrame(frame)
     }
-  }, [geo, canDrawRef, notifyComplete])
+  }, [geo, instant, strokeColor, canDrawRef, notifyComplete])
 
   return (
     <div ref={wrapRef} className="draw-follow-wrap">

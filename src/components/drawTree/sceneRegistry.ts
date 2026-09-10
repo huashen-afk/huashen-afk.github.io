@@ -105,7 +105,7 @@ function onGlobalPointerMove(e: PointerEvent) {
   pointer.y = e.clientY
 }
 
-function acquirePointerTracking() {
+export function acquirePointerTracking() {
   if (pointerUsers === 0) {
     window.addEventListener('pointermove', onGlobalPointerMove, { passive: true })
   }
@@ -117,6 +117,10 @@ function acquirePointerTracking() {
       window.removeEventListener('pointermove', onGlobalPointerMove)
     }
   }
+}
+
+export function getScenePointer() {
+  return pointer
 }
 
 /**
