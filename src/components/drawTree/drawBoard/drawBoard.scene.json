@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "updatedAt": "2026-09-10T10:36:48.970Z",
+  "items": [
+    {
+      "id": "line-mtvdu093-af05",
+      "type": "line",
+      "x": 1134,
+      "y": 133,
+      "props": {
+        "length": 68,
+        "rotation": 0,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "rhombus-mtvdu31j-ocii",
+      "type": "rhombus",
+      "x": 1123,
+      "y": 201,
+      "props": {
+        "side": 22,
+        "minAngle": 60,
+        "rotation": 0,
+        "followRotate": 0,
+        "instant": true
+      }
+    },
+    {
+      "id": "line-mtvduip0-m3lm",
+      "type": "line",
+      "x": 1140,
+      "y": 133,
+      "props": {
+        "length": 68,
+        "rotation": 0,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "line-mtvdyiyo-ossz",
+      "type": "line",
+      "x": 1140,
+      "y": 200,
+      "props": {
+        "length": 19,
+        "rotation": 30,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "line-mtve1qhd-n1mh",
+      "type": "line",
+      "x": 1135,
+      "y": 249,
+      "props": {
+        "length": 48,
+        "rotation": 0,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "line-mtve440i-dpq0",
+      "type": "line",
+      "x": 1120,
+      "y": 225,
+      "props": {
+        "length": 28,
+        "rotation": 30,
+        "followRotate": 0
+      }
+    }
+  ]
+}

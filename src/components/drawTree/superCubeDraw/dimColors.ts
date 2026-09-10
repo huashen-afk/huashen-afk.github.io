@@ -12,6 +12,15 @@ export const DIM_BLUE = '#4A7DB8'
 /** 连接 / 未强调 */
 export const DIM_NEUTRAL = STROKE
 
+/** 飞出匹配时的颜色层级（与绘制阶段一致：绿→黄→蓝） */
+export function dimColorRank(color?: string): number {
+  if (color === DIM_GREEN) return 0
+  if (color === DIM_YELLOW) return 1
+  if (color === DIM_BLUE) return 2
+  if (color === DIM_NEUTRAL) return 3
+  return 9
+}
+
 interface V5c {
   l: number
   f: number

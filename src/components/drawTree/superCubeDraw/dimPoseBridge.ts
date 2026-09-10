@@ -1,3 +1,5 @@
+import { dimColorRank } from './dimColors'
+
 export interface Seg2 {
   x0: number
   y0: number
@@ -116,6 +118,19 @@ export function easeOutCubic(t: number) {
 export function sortSegsForMatch(segs: Seg2[]): Seg2[] {
   const c = centroidOfSegs(segs)
   return [...segs].sort((u, v) => {
+    const cr = dimColorRank(u.color) - dimColorRank(v.color)
+    if (cr !== 0) return cr
+
+    // 同色内：先按棱方向，再按中点方位，稳定对齐绿/黄/蓝各层
+    const udx = u.x1 - u.x0
+    const udy = u.y1 - u.y0
+    const vdx = v.x1 - v.x0
+    const vdy = v.y1 - v.y0
+    // 无向棱：把方向折到 [0, π)
+    const uDir = ((Math.atan2(udy, udx) % Math.PI) + Math.PI) % Math.PI
+    const vDir = ((Math.atan2(vdy, vdx) % Math.PI) + Math.PI) % Math.PI
+    if (Math.abs(uDir - vDir) > 1e-6) return uDir - vDir
+
     const umx = (u.x0 + u.x1) / 2
     const umy = (u.y0 + u.y1) / 2
     const vmx = (v.x0 + v.x1) / 2
