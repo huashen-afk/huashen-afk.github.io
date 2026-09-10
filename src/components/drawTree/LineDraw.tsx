@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef } from 'react'
-import { DRAW_SPEED, STROKE, useDrawGate, useRegisterCanvas } from './sceneRegistry'
+import { DRAW_SPEED, STROKE, useDrawGate, useFollowRotate, useRegisterCanvas } from './sceneRegistry'
 
 interface LineDrawProps {
   /** 旋转角度（度），0 为竖直向下 */
@@ -14,6 +14,8 @@ interface LineDrawProps {
   drawId?: string
   /** 前驱 drawId；省略则立即按默认逻辑绘制 */
   after?: string
+  /** 跟随鼠标旋转倍数；0 关闭，>0 开启（角 = 鼠标方位角 × 该值） */
+  followRotate?: number
 }
 
 export function LineDraw({
@@ -23,11 +25,13 @@ export function LineDraw({
   length,
   drawId,
   after,
+  followRotate = 0,
 }: LineDrawProps) {
   const id = useId()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawnRef = useRef(0)
   const { canDrawRef, notifyComplete } = useDrawGate(drawId, after)
+  const wrapRef = useFollowRotate(followRotate)
   useRegisterCanvas(id, canvasRef)
 
   useEffect(() => {
@@ -132,5 +136,9 @@ export function LineDraw({
     }
   }, [rotation, dashed, dashStep, length, canDrawRef, notifyComplete])
 
-  return <canvas ref={canvasRef} className="linedraw-canvas" aria-hidden />
+  return (
+    <div ref={wrapRef} className="draw-follow-wrap">
+      <canvas ref={canvasRef} className="linedraw-canvas" aria-hidden />
+    </div>
+  )
 }

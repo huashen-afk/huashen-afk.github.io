@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef } from 'react'
-import { DRAW_SPEED, STROKE, useDrawGate, useRegisterCanvas } from './sceneRegistry'
+import { DRAW_SPEED, STROKE, useDrawGate, useFollowRotate, useRegisterCanvas } from './sceneRegistry'
 
 interface CircleDrawProps {
   /** 半径（px） */
@@ -10,6 +10,8 @@ interface CircleDrawProps {
   drawId?: string
   /** 前驱 drawId；省略则立即按默认逻辑绘制 */
   after?: string
+  /** 跟随鼠标旋转倍数；0 关闭，>0 开启（角 = 鼠标方位角 × 该值） */
+  followRotate?: number
 }
 
 export function CircleDraw({
@@ -17,11 +19,13 @@ export function CircleDraw({
   clockwise = true,
   drawId,
   after,
+  followRotate = 0,
 }: CircleDrawProps) {
   const id = useId()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawnRef = useRef(0)
   const { canDrawRef, notifyComplete } = useDrawGate(drawId, after)
+  const wrapRef = useFollowRotate(followRotate)
   useRegisterCanvas(id, canvasRef)
 
   const r = Math.max(1, radius)
@@ -87,5 +91,9 @@ export function CircleDraw({
     }
   }, [r, size, circumference, clockwise, canDrawRef, notifyComplete])
 
-  return <canvas ref={canvasRef} className="circledraw-canvas" aria-hidden />
+  return (
+    <div ref={wrapRef} className="draw-follow-wrap">
+      <canvas ref={canvasRef} className="circledraw-canvas" aria-hidden />
+    </div>
+  )
 }

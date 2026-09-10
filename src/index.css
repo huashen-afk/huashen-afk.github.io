@@ -82,6 +82,26 @@ body {
   margin-top: -4px;
 }
 
+.topology-mark {
+  position: relative;
+  width: 220px;
+  height: 160px;
+  margin: 28px auto 0;
+  flex-shrink: 0;
+}
+
+.topology-mark-item {
+  position: absolute;
+  line-height: 0;
+}
+
+.draw-follow-wrap {
+  display: inline-block;
+  line-height: 0;
+  transform-origin: center center;
+  will-change: transform;
+}
+
 /* 全屏透明层仅用于折射对齐；不挡滚动 */
 .fluid-glass-overlay {
   position: fixed;

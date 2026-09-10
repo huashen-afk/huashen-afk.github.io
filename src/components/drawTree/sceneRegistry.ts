@@ -97,5 +97,75 @@ export function useDrawGate(drawId?: string, after?: string) {
   return { canDrawRef, notifyComplete }
 }
 
+const pointer = { x: 0, y: 0 }
+let pointerUsers = 0
+
+function onGlobalPointerMove(e: PointerEvent) {
+  pointer.x = e.clientX
+  pointer.y = e.clientY
+}
+
+function acquirePointerTracking() {
+  if (pointerUsers === 0) {
+    window.addEventListener('pointermove', onGlobalPointerMove, { passive: true })
+  }
+  pointerUsers += 1
+  return () => {
+    pointerUsers -= 1
+    if (pointerUsers <= 0) {
+      pointerUsers = 0
+      window.removeEventListener('pointermove', onGlobalPointerMove)
+    }
+  }
+}
+
+/**
+ * 跟随鼠标旋转。factor 默认 0 不跟随；>0 时开启，旋转角 = 鼠标方位角 × factor。
+ */
+export function useFollowRotate(factor = 0) {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const angleRef = useRef(0)
+  const amount = Math.max(0, factor)
+
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!(amount > 0)) {
+      if (el) el.style.transform = ''
+      return
+    }
+
+    const release = acquirePointerTracking()
+    let frame = 0
+    let running = true
+
+    function tick() {
+      if (!running) return
+      const node = wrapRef.current
+      if (node) {
+        const rect = node.getBoundingClientRect()
+        const cx = rect.left + rect.width / 2
+        const cy = rect.top + rect.height / 2
+        const target = (Math.atan2(pointer.y - cy, pointer.x - cx) * 180) / Math.PI
+        const cur = angleRef.current
+        const delta = ((((target - cur) % 360) + 540) % 360) - 180
+        const next = cur + delta * 0.12
+        angleRef.current = next
+        node.style.transform = `rotate(${next * amount}deg)`
+      }
+      frame = window.requestAnimationFrame(tick)
+    }
+
+    frame = window.requestAnimationFrame(tick)
+    return () => {
+      running = false
+      window.cancelAnimationFrame(frame)
+      release()
+      if (wrapRef.current) wrapRef.current.style.transform = ''
+    }
+  }, [amount])
+
+  return wrapRef
+}
+
 export const STROKE = '#d8d2c8'
 export const DRAW_SPEED = 240

@@ -2,6 +2,7 @@ import { HsParticles } from './components/hs-particles/HsParticles'
 import FluidGlass from './components/fluid-glass/FluidGlass'
 import { LineDraw } from './components/drawTree/LineDraw'
 import { RhombusDraw } from './components/drawTree/RhombusDraw'
+import { TopologyMark } from './components/drawTree/TopologyMark'
 
 const HERO_TICKS = [
   { left: 14, length: 36, rhombus: true },
@@ -43,6 +44,7 @@ function App() {
             ))}
           </div>
         </div>
+        <TopologyMark />
       </section>
     </div>
   )
