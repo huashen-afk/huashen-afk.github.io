@@ -1,7 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-
-/** 视口内圆弧绘制速度（px/s，沿周长） */
-const DRAW_SPEED = 240
+import { useEffect, useId, useRef } from 'react'
+import { DRAW_SPEED, STROKE, useRegisterCanvas } from './sceneRegistry'
 
 interface CircleDrawProps {
   /** 半径（px） */
@@ -11,31 +9,38 @@ interface CircleDrawProps {
 }
 
 export function CircleDraw({ radius = 48, clockwise = true }: CircleDrawProps) {
-  const wrapRef = useRef<HTMLDivElement>(null)
+  const id = useId()
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawnRef = useRef(0)
-  const [drawn, setDrawn] = useState(0)
+  useRegisterCanvas(id, canvasRef)
 
   const r = Math.max(1, radius)
   const size = r * 2
   const circumference = 2 * Math.PI * r
 
   useEffect(() => {
-    const wrap = wrapRef.current
-    if (!wrap) return
+    const canvas = canvasRef.current
+    if (!canvas) return
 
     drawnRef.current = 0
-    setDrawn(0)
-
     let frame = 0
     let running = true
     let last = performance.now()
 
     function tick(now: number) {
-      if (!running || !wrap) return
+      if (!running || !canvas) return
       const dt = Math.min(0.05, (now - last) / 1000)
       last = now
 
-      const rect = wrap.getBoundingClientRect()
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      if (canvas.width !== Math.floor(size * dpr) || canvas.height !== Math.floor(size * dpr)) {
+        canvas.width = Math.floor(size * dpr)
+        canvas.height = Math.floor(size * dpr)
+        canvas.style.width = `${size}px`
+        canvas.style.height = `${size}px`
+      }
+
+      const rect = canvas.getBoundingClientRect()
       const vw = window.innerWidth
       const vh = window.innerHeight
       const isVisible =
@@ -43,7 +48,21 @@ export function CircleDraw({ radius = 48, clockwise = true }: CircleDrawProps) {
 
       if (isVisible && drawnRef.current < circumference) {
         drawnRef.current = Math.min(circumference, drawnRef.current + DRAW_SPEED * dt)
-        setDrawn(drawnRef.current)
+      }
+
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+        ctx.clearRect(0, 0, size, size)
+        const progress = drawnRef.current / circumference
+        const start = -Math.PI / 2
+        const delta = progress * Math.PI * 2
+        const end = clockwise ? start + delta : start - delta
+        ctx.strokeStyle = STROKE
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.arc(r, r, r - 0.5, start, end, !clockwise)
+        ctx.stroke()
       }
 
       frame = window.requestAnimationFrame(tick)
@@ -54,39 +73,7 @@ export function CircleDraw({ radius = 48, clockwise = true }: CircleDrawProps) {
       running = false
       window.cancelAnimationFrame(frame)
     }
-  }, [circumference])
+  }, [r, size, circumference, clockwise])
 
-  const dashOffset = circumference - drawn
-  const transform = clockwise
-    ? `rotate(-90 ${r} ${r})`
-    : `translate(${r} ${r}) scale(-1 1) translate(${-r} ${-r}) rotate(-90 ${r} ${r})`
-
-  return (
-    <div
-      ref={wrapRef}
-      className="circledraw-wrap"
-      style={{ width: size, height: size }}
-      aria-hidden
-    >
-      <svg
-        className="circledraw-svg"
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-      >
-        <circle
-          className="circledraw-circle"
-          cx={r}
-          cy={r}
-          r={r - 0.5}
-          fill="none"
-          stroke="#d8d2c8"
-          strokeWidth={1}
-          strokeDasharray={circumference}
-          strokeDashoffset={dashOffset}
-          transform={transform}
-        />
-      </svg>
-    </div>
-  )
+  return <canvas ref={canvasRef} className="circledraw-canvas" aria-hidden />
 }

@@ -2,11 +2,12 @@ import { useEffect, useRef, useState, type RefObject } from 'react'
 import * as THREE from 'three'
 import { Canvas, createPortal, useFrame } from '@react-three/fiber'
 import { MeshTransmissionMaterial, useFBO, useGLTF } from '@react-three/drei'
+import { forEachSceneLayer } from '../drawTree/sceneRegistry'
 
 const GLB = '/assets/3d/bar.glb'
 const GEOMETRY_KEY = 'Cube'
-const LOGO_SELECTOR = '.hs-canvas'
 const PAGE_SELECTOR = '.page'
+const LOGO_SELECTOR = '.hs-canvas'
 const BG = '#120f17'
 
 const IOR = 1.5
@@ -58,7 +59,6 @@ function paintPageBackground(ctx: CanvasRenderingContext2D, width: number, heigh
     ctx.restore()
   }
 
-  // 对齐 index.css .page 背景
   fillSoftEllipse(
     pr.left + pr.width * 0.5,
     pr.top + pr.height * 0.08,
@@ -77,6 +77,26 @@ function paintPageBackground(ctx: CanvasRenderingContext2D, width: number, heigh
     0.9,
     0.55,
   )
+}
+
+function paintViewportScene(ctx: CanvasRenderingContext2D, width: number, height: number) {
+  paintPageBackground(ctx, width, height)
+
+  const logo = document.querySelector<HTMLCanvasElement>(LOGO_SELECTOR)
+  if (logo && logo.width > 0 && logo.height > 0) {
+    const rect = logo.getBoundingClientRect()
+    if (rect.bottom > 0 && rect.top < height && rect.right > 0 && rect.left < width) {
+      ctx.drawImage(logo, rect.left, rect.top, rect.width, rect.height)
+    }
+  }
+
+  forEachSceneLayer(({ canvas }) => {
+    if (!canvas.width || !canvas.height) return
+    if (canvas === logo) return
+    const rect = canvas.getBoundingClientRect()
+    if (rect.bottom <= 0 || rect.top >= height || rect.right <= 0 || rect.left >= width) return
+    ctx.drawImage(canvas, rect.left, rect.top, rect.width, rect.height)
+  })
 }
 
 function FluidGlass() {
@@ -118,18 +138,14 @@ function FluidGlass() {
 
 function GlassBar({ hitRef }: { hitRef: RefObject<HTMLDivElement | null> }) {
   const ref = useRef<THREE.Mesh>(null!)
-  const logoRef = useRef<THREE.Mesh>(null!)
-  const bgRef = useRef<THREE.Mesh>(null!)
-  const matRef = useRef<THREE.MeshBasicMaterial>(null!)
-  const bgMatRef = useRef<THREE.MeshBasicMaterial>(null!)
+  const sceneMeshRef = useRef<THREE.Mesh>(null!)
+  const sceneMatRef = useRef<THREE.MeshBasicMaterial>(null!)
   const { nodes } = useGLTF(GLB)
   const geometry = (nodes[GEOMETRY_KEY] as THREE.Mesh | undefined)?.geometry
   const buffer = useFBO({ samples: 0 })
   const [scene] = useState(() => new THREE.Scene())
-  const textureRef = useRef<THREE.CanvasTexture | null>(null)
-  const bgTextureRef = useRef<THREE.CanvasTexture | null>(null)
-  const bgCanvasRef = useRef<HTMLCanvasElement | null>(null)
-  const logoCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const sceneTextureRef = useRef<THREE.CanvasTexture | null>(null)
+  const sceneCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const geoSizeRef = useRef({ x: 1, y: 1, z: 1 })
 
   useEffect(() => {
@@ -145,37 +161,21 @@ function GlassBar({ hitRef }: { hitRef: RefObject<HTMLDivElement | null> }) {
   }, [geometry])
 
   useEffect(() => {
-    const bgCanvas = document.createElement('canvas')
-    bgCanvas.width = Math.max(1, window.innerWidth)
-    bgCanvas.height = Math.max(1, window.innerHeight)
-    bgCanvasRef.current = bgCanvas
-    const bgTexture = new THREE.CanvasTexture(bgCanvas)
-    bgTexture.colorSpace = THREE.SRGBColorSpace
-    bgTextureRef.current = bgTexture
-    if (bgMatRef.current) {
-      bgMatRef.current.map = bgTexture
-      bgMatRef.current.needsUpdate = true
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, window.innerWidth)
+    canvas.height = Math.max(1, window.innerHeight)
+    sceneCanvasRef.current = canvas
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.colorSpace = THREE.SRGBColorSpace
+    sceneTextureRef.current = texture
+    if (sceneMatRef.current) {
+      sceneMatRef.current.map = texture
+      sceneMatRef.current.needsUpdate = true
     }
-
-    const canvas = document.querySelector<HTMLCanvasElement>(LOGO_SELECTOR)
-    if (canvas) {
-      logoCanvasRef.current = canvas
-      const texture = new THREE.CanvasTexture(canvas)
-      texture.colorSpace = THREE.SRGBColorSpace
-      texture.needsUpdate = true
-      textureRef.current = texture
-      if (matRef.current) {
-        matRef.current.map = texture
-        matRef.current.needsUpdate = true
-      }
-    }
-
     return () => {
-      bgTexture.dispose()
-      bgTextureRef.current = null
-      bgCanvasRef.current = null
-      textureRef.current?.dispose()
-      textureRef.current = null
+      texture.dispose()
+      sceneTextureRef.current = null
+      sceneCanvasRef.current = null
     }
   }, [])
 
@@ -198,61 +198,28 @@ function GlassBar({ hitRef }: { hitRef: RefObject<HTMLDivElement | null> }) {
     const scaleY = scaleZ * BAR_THICKNESS_RATIO
     ref.current.scale.set(scaleX, scaleY, scaleZ)
 
-    const bgCanvas = bgCanvasRef.current
-    const bgTexture = bgTextureRef.current
-    const bgMesh = bgRef.current
-    if (bgCanvas && bgTexture && bgMesh) {
+    const sceneCanvas = sceneCanvasRef.current
+    const sceneTexture = sceneTextureRef.current
+    const sceneMesh = sceneMeshRef.current
+    if (sceneCanvas && sceneTexture && sceneMesh) {
       const w = Math.max(1, Math.floor(window.innerWidth))
       const h = Math.max(1, Math.floor(window.innerHeight))
-      if (bgCanvas.width !== w || bgCanvas.height !== h) {
-        bgCanvas.width = w
-        bgCanvas.height = h
+      if (sceneCanvas.width !== w || sceneCanvas.height !== h) {
+        sceneCanvas.width = w
+        sceneCanvas.height = h
       }
-      const bgCtx = bgCanvas.getContext('2d')
-      if (bgCtx) {
-        paintPageBackground(bgCtx, w, h)
-        bgTexture.needsUpdate = true
+      const ctx = sceneCanvas.getContext('2d')
+      if (ctx) {
+        paintViewportScene(ctx, w, h)
+        sceneTexture.needsUpdate = true
       }
-      if (bgMatRef.current && bgMatRef.current.map !== bgTexture) {
-        bgMatRef.current.map = bgTexture
-        bgMatRef.current.needsUpdate = true
+      if (sceneMatRef.current && sceneMatRef.current.map !== sceneTexture) {
+        sceneMatRef.current.map = sceneTexture
+        sceneMatRef.current.needsUpdate = true
       }
-      const world = viewport.getCurrentViewport(camera, [0, 0, -4])
-      bgMesh.position.set(0, 0, -4)
-      bgMesh.scale.set(world.width, world.height, 1)
-    }
-
-    if (!textureRef.current) {
-      const canvas = document.querySelector<HTMLCanvasElement>(LOGO_SELECTOR)
-      if (canvas) {
-        logoCanvasRef.current = canvas
-        const texture = new THREE.CanvasTexture(canvas)
-        texture.colorSpace = THREE.SRGBColorSpace
-        textureRef.current = texture
-        if (matRef.current) {
-          matRef.current.map = texture
-          matRef.current.needsUpdate = true
-        }
-      }
-    }
-
-    const texture = textureRef.current
-    const logoEl = logoCanvasRef.current
-    const logoMesh = logoRef.current
-
-    if (texture && logoEl && logoMesh) {
-      texture.needsUpdate = true
-      const rect = logoEl.getBoundingClientRect()
       const world = viewport.getCurrentViewport(camera, [0, 0, 12])
-      const x = ((rect.left + rect.width / 2) / window.innerWidth - 0.5) * world.width
-      const y = -((rect.top + rect.height / 2) / window.innerHeight - 0.5) * world.height
-      const w = (rect.width / window.innerWidth) * world.width
-      const h = (rect.height / window.innerHeight) * world.height
-      logoMesh.position.set(x, y, 12)
-      logoMesh.scale.set(w, h, 1)
-      logoMesh.visible = rect.width > 0 && rect.height > 0
-    } else if (logoMesh) {
-      logoMesh.visible = false
+      sceneMesh.position.set(0, 0, 12)
+      sceneMesh.scale.set(world.width, world.height, 1)
     }
 
     gl.setClearColor(0x000000, 0)
@@ -265,16 +232,10 @@ function GlassBar({ hitRef }: { hitRef: RefObject<HTMLDivElement | null> }) {
   return (
     <>
       {createPortal(
-        <>
-          <mesh ref={bgRef} position={[0, 0, -4]}>
-            <planeGeometry />
-            <meshBasicMaterial ref={bgMatRef} toneMapped={false} />
-          </mesh>
-          <mesh ref={logoRef} visible={false}>
-            <planeGeometry />
-            <meshBasicMaterial ref={matRef} transparent toneMapped={false} />
-          </mesh>
-        </>,
+        <mesh ref={sceneMeshRef} position={[0, 0, 12]}>
+          <planeGeometry />
+          <meshBasicMaterial ref={sceneMatRef} toneMapped={false} />
+        </mesh>,
         scene,
       )}
       <mesh ref={ref} rotation-x={Math.PI / 2} geometry={geometry}>

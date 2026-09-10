@@ -1,7 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-
-/** 视口内路径绘制速度（px/s，沿周长） */
-const DRAW_SPEED = 240
+import { useEffect, useId, useMemo, useRef } from 'react'
+import { DRAW_SPEED, STROKE, useRegisterCanvas } from './sceneRegistry'
 
 interface TriangleDrawProps {
   /**
@@ -21,10 +19,12 @@ function resolveAngles(angles: [number, number] | [number, number, number]): [nu
   return [angles[0], angles[1]]
 }
 
-function buildTriangle(
+function buildTrianglePoints(
   anglePair: [number, number],
   sideLens: [number, number, number],
-): { path: string; width: number; height: number; cx: number; cy: number; perimeter: number } {
+  rotationDeg: number,
+  clockwise: boolean,
+) {
   let A = (anglePair[0] * Math.PI) / 180
   let B = (anglePair[1] * Math.PI) / 180
   let C = Math.PI - A - B
@@ -36,45 +36,75 @@ function buildTriangle(
   }
 
   const [sa, sb, sc] = sideLens.map((s) => Math.max(1, s)) as [number, number, number]
-  // 正弦定理：用三边期望长度估一个公共比值
-  const ratio =
-    (sa / Math.sin(A) + sb / Math.sin(B) + sc / Math.sin(C)) / 3
+  const ratio = (sa / Math.sin(A) + sb / Math.sin(B) + sc / Math.sin(C)) / 3
   const a = ratio * Math.sin(A)
   const b = ratio * Math.sin(B)
   const c = ratio * Math.sin(C)
 
-  // 顶点 A 在原点，边 AB=c 沿 +x；顺时针取 C 在 +y（SVG）
-  const Ax = 0
-  const Ay = 0
-  const Bx = c
-  const By = 0
-  const Cx = b * Math.cos(A)
-  const Cy = b * Math.sin(A)
+  let pts = [
+    { x: 0, y: 0 },
+    { x: c, y: 0 },
+    { x: b * Math.cos(A), y: b * Math.sin(A) },
+  ]
+  if (!clockwise) pts = [pts[0], pts[2], pts[1]]
 
-  const minX = Math.min(Ax, Bx, Cx)
-  const maxX = Math.max(Ax, Bx, Cx)
-  const minY = Math.min(Ay, By, Cy)
-  const maxY = Math.max(Ay, By, Cy)
-  const pad = 1
+  const cx0 = (pts[0].x + pts[1].x + pts[2].x) / 3
+  const cy0 = (pts[0].y + pts[1].y + pts[2].y) / 3
+  const rad = (rotationDeg * Math.PI) / 180
+  const cos = Math.cos(rad)
+  const sin = Math.sin(rad)
+  pts = pts.map((p) => {
+    const x = p.x - cx0
+    const y = p.y - cy0
+    return { x: x * cos - y * sin, y: x * sin + y * cos }
+  })
+
+  const xs = pts.map((p) => p.x)
+  const ys = pts.map((p) => p.y)
+  const minX = Math.min(...xs)
+  const maxX = Math.max(...xs)
+  const minY = Math.min(...ys)
+  const maxY = Math.max(...ys)
+  const pad = 2
   const width = Math.max(2, maxX - minX + pad * 2)
   const height = Math.max(2, maxY - minY + pad * 2)
   const ox = -minX + pad
   const oy = -minY + pad
-
-  const xA = Ax + ox
-  const yA = Ay + oy
-  const xB = Bx + ox
-  const yB = By + oy
-  const xC = Cx + ox
-  const yC = Cy + oy
-
-  // 顺时针：A → B → C → A
-  const path = `M ${xA} ${yA} L ${xB} ${yB} L ${xC} ${yC} Z`
+  const points = pts.map((p) => ({ x: p.x + ox, y: p.y + oy }))
   const perimeter = a + b + c
-  const cx = width / 2
-  const cy = height / 2
+  return { points, width, height, perimeter }
+}
 
-  return { path, width, height, cx, cy, perimeter }
+function drawProgressivePolygon(
+  ctx: CanvasRenderingContext2D,
+  points: { x: number; y: number }[],
+  drawn: number,
+) {
+  if (points.length < 2 || drawn <= 0) return
+  const segs: { x0: number; y0: number; x1: number; y1: number; len: number }[] = []
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i]
+    const b = points[(i + 1) % points.length]
+    const len = Math.hypot(b.x - a.x, b.y - a.y)
+    segs.push({ x0: a.x, y0: a.y, x1: b.x, y1: b.y, len })
+  }
+
+  let remain = drawn
+  ctx.beginPath()
+  let started = false
+  for (const seg of segs) {
+    if (remain <= 0) break
+    const t = Math.min(1, remain / seg.len)
+    const x = seg.x0 + (seg.x1 - seg.x0) * t
+    const y = seg.y0 + (seg.y1 - seg.y0) * t
+    if (!started) {
+      ctx.moveTo(seg.x0, seg.y0)
+      started = true
+    }
+    ctx.lineTo(x, y)
+    remain -= seg.len
+  }
+  ctx.stroke()
 }
 
 export function TriangleDraw({
@@ -83,30 +113,40 @@ export function TriangleDraw({
   clockwise = true,
   rotation = 0,
 }: TriangleDrawProps) {
-  const wrapRef = useRef<HTMLDivElement>(null)
+  const id = useId()
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawnRef = useRef(0)
-  const [drawn, setDrawn] = useState(0)
+  useRegisterCanvas(id, canvasRef)
 
-  const anglePair = resolveAngles(angles)
-  const { path, width, height, cx, cy, perimeter } = buildTriangle(anglePair, sides)
+  const geo = useMemo(
+    () => buildTrianglePoints(resolveAngles(angles), sides, rotation, clockwise),
+    [angles, sides, rotation, clockwise],
+  )
 
   useEffect(() => {
-    const wrap = wrapRef.current
-    if (!wrap) return
+    const canvas = canvasRef.current
+    if (!canvas) return
 
     drawnRef.current = 0
-    setDrawn(0)
-
     let frame = 0
     let running = true
     let last = performance.now()
 
     function tick(now: number) {
-      if (!running || !wrap) return
+      if (!running || !canvas) return
       const dt = Math.min(0.05, (now - last) / 1000)
       last = now
 
-      const rect = wrap.getBoundingClientRect()
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const { width, height, perimeter, points } = geo
+      if (canvas.width !== Math.floor(width * dpr) || canvas.height !== Math.floor(height * dpr)) {
+        canvas.width = Math.floor(width * dpr)
+        canvas.height = Math.floor(height * dpr)
+        canvas.style.width = `${width}px`
+        canvas.style.height = `${height}px`
+      }
+
+      const rect = canvas.getBoundingClientRect()
       const vw = window.innerWidth
       const vh = window.innerHeight
       const isVisible =
@@ -114,7 +154,16 @@ export function TriangleDraw({
 
       if (isVisible && drawnRef.current < perimeter) {
         drawnRef.current = Math.min(perimeter, drawnRef.current + DRAW_SPEED * dt)
-        setDrawn(drawnRef.current)
+      }
+
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+        ctx.clearRect(0, 0, width, height)
+        ctx.strokeStyle = STROKE
+        ctx.lineWidth = 1
+        ctx.lineJoin = 'miter'
+        drawProgressivePolygon(ctx, points, drawnRef.current)
       }
 
       frame = window.requestAnimationFrame(tick)
@@ -125,37 +174,7 @@ export function TriangleDraw({
       running = false
       window.cancelAnimationFrame(frame)
     }
-  }, [perimeter, path])
+  }, [geo])
 
-  const dashOffset = perimeter - drawn
-  const transform = clockwise
-    ? undefined
-    : `translate(${cx} ${cy}) scale(-1 1) translate(${-cx} ${-cy})`
-
-  return (
-    <div
-      ref={wrapRef}
-      className="triangledraw-wrap"
-      style={{ width, height, transform: `rotate(${rotation}deg)` }}
-      aria-hidden
-    >
-      <svg
-        className="triangledraw-svg"
-        width={width}
-        height={height}
-        viewBox={`0 0 ${width} ${height}`}
-      >
-        <path
-          className="triangledraw-path"
-          d={path}
-          fill="none"
-          stroke="#d8d2c8"
-          strokeWidth={1}
-          strokeDasharray={perimeter}
-          strokeDashoffset={dashOffset}
-          transform={transform}
-        />
-      </svg>
-    </div>
-  )
+  return <canvas ref={canvasRef} className="triangledraw-canvas" aria-hidden />
 }

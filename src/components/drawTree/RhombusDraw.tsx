@@ -1,7 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-
-/** 视口内路径绘制速度（px/s，沿周长） */
-const DRAW_SPEED = 240
+import { useEffect, useId, useMemo, useRef } from 'react'
+import { DRAW_SPEED, STROKE, useRegisterCanvas } from './sceneRegistry'
 
 interface RhombusDrawProps {
   /** 边长（px） */
@@ -14,53 +12,119 @@ interface RhombusDrawProps {
   rotation?: number
 }
 
+function buildRhombusPoints(side: number, minAngle: number, rotationDeg: number, clockwise: boolean) {
+  const a = Math.max(1, side)
+  const theta = Math.min(179, Math.max(1, minAngle))
+  const halfRad = (theta * Math.PI) / 360
+  const halfH = a * Math.sin(halfRad)
+  const halfV = a * Math.cos(halfRad)
+
+  let pts = [
+    { x: 0, y: -halfV },
+    { x: halfH, y: 0 },
+    { x: 0, y: halfV },
+    { x: -halfH, y: 0 },
+  ]
+  if (!clockwise) pts = [pts[0], pts[3], pts[2], pts[1]]
+
+  const rad = (rotationDeg * Math.PI) / 180
+  const cos = Math.cos(rad)
+  const sin = Math.sin(rad)
+  pts = pts.map((p) => ({
+    x: p.x * cos - p.y * sin,
+    y: p.x * sin + p.y * cos,
+  }))
+
+  const xs = pts.map((p) => p.x)
+  const ys = pts.map((p) => p.y)
+  const minX = Math.min(...xs)
+  const maxX = Math.max(...xs)
+  const minY = Math.min(...ys)
+  const maxY = Math.max(...ys)
+  const pad = 2
+  const width = Math.max(2, maxX - minX + pad * 2)
+  const height = Math.max(2, maxY - minY + pad * 2)
+  const ox = -minX + pad
+  const oy = -minY + pad
+  const points = pts.map((p) => ({ x: p.x + ox, y: p.y + oy }))
+  const perimeter = 4 * a
+  return { points, width, height, perimeter }
+}
+
+function drawProgressivePolygon(
+  ctx: CanvasRenderingContext2D,
+  points: { x: number; y: number }[],
+  drawn: number,
+  closed: boolean,
+) {
+  if (points.length < 2 || drawn <= 0) return
+  const segs: { x0: number; y0: number; x1: number; y1: number; len: number }[] = []
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i]
+    const b = points[(i + 1) % points.length]
+    if (!closed && i === points.length - 1) break
+    const len = Math.hypot(b.x - a.x, b.y - a.y)
+    segs.push({ x0: a.x, y0: a.y, x1: b.x, y1: b.y, len })
+  }
+
+  let remain = drawn
+  ctx.beginPath()
+  let started = false
+  for (const seg of segs) {
+    if (remain <= 0) break
+    const t = Math.min(1, remain / seg.len)
+    const x = seg.x0 + (seg.x1 - seg.x0) * t
+    const y = seg.y0 + (seg.y1 - seg.y0) * t
+    if (!started) {
+      ctx.moveTo(seg.x0, seg.y0)
+      started = true
+    }
+    ctx.lineTo(x, y)
+    remain -= seg.len
+  }
+  ctx.stroke()
+}
+
 export function RhombusDraw({
   side = 64,
   minAngle = 30,
   clockwise = true,
   rotation = 0,
 }: RhombusDrawProps) {
-  const wrapRef = useRef<HTMLDivElement>(null)
+  const id = useId()
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawnRef = useRef(0)
-  const [drawn, setDrawn] = useState(0)
+  useRegisterCanvas(id, canvasRef)
 
-  const a = Math.max(1, side)
-  const theta = Math.min(179, Math.max(1, minAngle))
-  const halfRad = (theta * Math.PI) / 360
-  const halfH = a * Math.sin(halfRad)
-  const halfV = a * Math.cos(halfRad)
-  const width = Math.max(2, halfH * 2)
-  const height = Math.max(2, halfV * 2)
-  const cx = width / 2
-  const cy = height / 2
-  const perimeter = 4 * a
-
-  // 顶点朝上，最小角在上下；顺时针：上 → 右 → 下 → 左
-  const path = [
-    `M ${cx} ${cy - halfV}`,
-    `L ${cx + halfH} ${cy}`,
-    `L ${cx} ${cy + halfV}`,
-    `L ${cx - halfH} ${cy}`,
-    'Z',
-  ].join(' ')
+  const geo = useMemo(
+    () => buildRhombusPoints(side, minAngle, rotation, clockwise),
+    [side, minAngle, rotation, clockwise],
+  )
 
   useEffect(() => {
-    const wrap = wrapRef.current
-    if (!wrap) return
+    const canvas = canvasRef.current
+    if (!canvas) return
 
     drawnRef.current = 0
-    setDrawn(0)
-
     let frame = 0
     let running = true
     let last = performance.now()
 
     function tick(now: number) {
-      if (!running || !wrap) return
+      if (!running || !canvas) return
       const dt = Math.min(0.05, (now - last) / 1000)
       last = now
 
-      const rect = wrap.getBoundingClientRect()
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const { width, height, perimeter, points } = geo
+      if (canvas.width !== Math.floor(width * dpr) || canvas.height !== Math.floor(height * dpr)) {
+        canvas.width = Math.floor(width * dpr)
+        canvas.height = Math.floor(height * dpr)
+        canvas.style.width = `${width}px`
+        canvas.style.height = `${height}px`
+      }
+
+      const rect = canvas.getBoundingClientRect()
       const vw = window.innerWidth
       const vh = window.innerHeight
       const isVisible =
@@ -68,7 +132,16 @@ export function RhombusDraw({
 
       if (isVisible && drawnRef.current < perimeter) {
         drawnRef.current = Math.min(perimeter, drawnRef.current + DRAW_SPEED * dt)
-        setDrawn(drawnRef.current)
+      }
+
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+        ctx.clearRect(0, 0, width, height)
+        ctx.strokeStyle = STROKE
+        ctx.lineWidth = 1
+        ctx.lineJoin = 'miter'
+        drawProgressivePolygon(ctx, points, drawnRef.current, true)
       }
 
       frame = window.requestAnimationFrame(tick)
@@ -79,37 +152,7 @@ export function RhombusDraw({
       running = false
       window.cancelAnimationFrame(frame)
     }
-  }, [perimeter])
+  }, [geo])
 
-  const dashOffset = perimeter - drawn
-  const transform = clockwise
-    ? undefined
-    : `translate(${cx} ${cy}) scale(-1 1) translate(${-cx} ${-cy})`
-
-  return (
-    <div
-      ref={wrapRef}
-      className="rhombusdraw-wrap"
-      style={{ width, height, transform: `rotate(${rotation}deg)` }}
-      aria-hidden
-    >
-      <svg
-        className="rhombusdraw-svg"
-        width={width}
-        height={height}
-        viewBox={`0 0 ${width} ${height}`}
-      >
-        <path
-          className="rhombusdraw-path"
-          d={path}
-          fill="none"
-          stroke="#d8d2c8"
-          strokeWidth={1}
-          strokeDasharray={perimeter}
-          strokeDashoffset={dashOffset}
-          transform={transform}
-        />
-      </svg>
-    </div>
-  )
+  return <canvas ref={canvasRef} className="rhombusdraw-canvas" aria-hidden />
 }
