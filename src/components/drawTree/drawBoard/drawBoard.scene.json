@@ -1,25 +1,25 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-10T10:36:48.970Z",
+  "updatedAt": "2026-09-11T10:07:37.242Z",
   "items": [
     {
-      "id": "line-mtvdu093-af05",
+      "id": "line-mtwqn5m3-5tqw",
       "type": "line",
-      "x": 1134,
-      "y": 133,
+      "x": 56,
+      "y": 34,
       "props": {
-        "length": 68,
+        "length": 82,
         "rotation": 0,
         "followRotate": 0
       }
     },
     {
-      "id": "rhombus-mtvdu31j-ocii",
+      "id": "rhombus-mtwqn84q-5ouh",
       "type": "rhombus",
-      "x": 1123,
-      "y": 201,
+      "x": 44,
+      "y": 129,
       "props": {
-        "side": 22,
+        "side": 24,
         "minAngle": 60,
         "rotation": 0,
         "followRotate": 0,
@@ -27,32 +27,21 @@
       }
     },
     {
-      "id": "line-mtvduip0-m3lm",
+      "id": "line-mtwqnnid-rpk9",
       "type": "line",
-      "x": 1140,
-      "y": 133,
+      "x": 38,
+      "y": 151,
       "props": {
-        "length": 68,
-        "rotation": 0,
-        "followRotate": 0
-      }
-    },
-    {
-      "id": "line-mtvdyiyo-ossz",
-      "type": "line",
-      "x": 1140,
-      "y": 200,
-      "props": {
-        "length": 19,
+        "length": 72,
         "rotation": 30,
         "followRotate": 0
       }
     },
     {
-      "id": "line-mtve1qhd-n1mh",
+      "id": "line-mtwqq2oa-sa0f",
       "type": "line",
-      "x": 1135,
-      "y": 249,
+      "x": 56,
+      "y": 182,
       "props": {
         "length": 48,
         "rotation": 0,
@@ -60,13 +49,182 @@
       }
     },
     {
-      "id": "line-mtve440i-dpq0",
+      "id": "circle-mtwqtfmd-hokk",
+      "type": "circle",
+      "x": 54,
+      "y": 232,
+      "props": {
+        "radius": 4,
+        "clockwise": true,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "line-mtwqw05z-1ozf",
       "type": "line",
-      "x": 1120,
-      "y": 225,
+      "x": 56,
+      "y": 238,
+      "props": {
+        "length": 88,
+        "rotation": 0,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "line-mtwqy2t8-sa7d",
+      "type": "line",
+      "x": 38,
+      "y": 152,
+      "props": {
+        "length": 32,
+        "rotation": 0,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "rhombus-mtwqzr5z-gjwo",
+      "type": "rhombus",
+      "x": 30,
+      "y": 112,
+      "props": {
+        "side": 16,
+        "minAngle": 60,
+        "rotation": 0,
+        "followRotate": 0,
+        "instant": true
+      }
+    },
+    {
+      "id": "rhombus-mtwqzz29-akcc",
+      "type": "rhombus",
+      "x": 66,
+      "y": 159,
+      "props": {
+        "side": 16,
+        "minAngle": 60,
+        "rotation": 0,
+        "followRotate": 0,
+        "instant": true
+      }
+    },
+    {
+      "id": "circle-mtwr5539-mbi0",
+      "type": "circle",
+      "x": 36,
+      "y": 186,
+      "props": {
+        "radius": 4,
+        "clockwise": true,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "line-mtwr6ypp-rflu",
+      "type": "line",
+      "x": 74,
+      "y": 213,
+      "props": {
+        "length": 73,
+        "rotation": 0,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "circle-mtwr7cva-8el7",
+      "type": "circle",
+      "x": 70,
+      "y": 287,
+      "props": {
+        "radius": 6,
+        "clockwise": true,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "circle-mtwregzb-8x26",
+      "type": "circle",
+      "x": 50,
+      "y": 328,
+      "props": {
+        "radius": 8,
+        "clockwise": true,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "line-mtwrf1tz-4a5c",
+      "type": "line",
+      "x": 38,
+      "y": 192,
+      "props": {
+        "length": 58,
+        "rotation": 0,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "circle-mtwrf6uf-wr0t",
+      "type": "circle",
+      "x": 36,
+      "y": 251,
+      "props": {
+        "radius": 4,
+        "clockwise": true,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "line-mtwru98a-bd7m",
+      "type": "line",
+      "x": 38,
+      "y": 86,
+      "props": {
+        "length": 70,
+        "rotation": 30,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "line-mtwrwcg8-nkje",
+      "type": "line",
+      "x": 38,
+      "y": 67,
+      "props": {
+        "length": 46,
+        "rotation": 0,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "line-mtwrx6p2-dtyv",
+      "type": "line",
+      "x": 74,
+      "y": 132,
       "props": {
         "length": 28,
-        "rotation": 30,
+        "rotation": 0,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "circle-mtwry723-ngta",
+      "type": "circle",
+      "x": 36,
+      "y": 62,
+      "props": {
+        "radius": 4,
+        "clockwise": true,
+        "followRotate": 0
+      }
+    },
+    {
+      "id": "circle-mtwryds1-cbba",
+      "type": "circle",
+      "x": 72,
+      "y": 126,
+      "props": {
+        "radius": 4,
+        "clockwise": true,
         "followRotate": 0
       }
     }

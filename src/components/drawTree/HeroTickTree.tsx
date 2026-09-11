@@ -1,62 +1,152 @@
 import { LineDraw } from './LineDraw'
 import { RhombusDraw } from './RhombusDraw'
+import { CircleDraw } from './CircleDraw'
 
-/** 相对原点：绘图板场景归一化后的第一棵树 */
-const ORIGIN_X = 1120
-const ORIGIN_Y = 133
-
+/** 绘图板场景树；原点 (30, 34)。 */
 const PARTS = [
   {
-    key: 'stem-l',
+    key: 'line-mtwqn5m3',
     type: 'line' as const,
-    x: 1134 - ORIGIN_X,
-    y: 133 - ORIGIN_Y,
-    props: { length: 68, rotation: 0, followRotate: 0 },
+    x: 26,
+    y: 0,
+    props: { length: 82, rotation: 0, followRotate: 0 },
   },
   {
-    key: 'stem-r',
-    type: 'line' as const,
-    x: 1140 - ORIGIN_X,
-    y: 133 - ORIGIN_Y,
-    props: { length: 68, rotation: 0, followRotate: 0 },
+    key: 'circle-mtwry723',
+    type: 'circle' as const,
+    x: 6,
+    y: 28,
+    props: { radius: 4, clockwise: true, followRotate: 0 },
   },
   {
-    key: 'branch-r',
+    key: 'line-mtwrwcg8',
     type: 'line' as const,
-    x: 1140 - ORIGIN_X,
-    y: 200 - ORIGIN_Y,
-    props: { length: 19, rotation: 30, followRotate: 0 },
+    x: 8,
+    y: 33,
+    props: { length: 46, rotation: 0, followRotate: 0 },
   },
   {
-    key: 'branch-l',
+    key: 'line-mtwru98a',
     type: 'line' as const,
-    x: 1120 - ORIGIN_X,
-    y: 225 - ORIGIN_Y,
-    props: { length: 28, rotation: 30, followRotate: 0 },
+    x: 8,
+    y: 52,
+    props: { length: 70, rotation: 30, followRotate: 0 },
   },
   {
-    key: 'stem-b',
+    key: 'rhombus-mtwqzr5z',
+    type: 'rhombus' as const,
+    x: 0,
+    y: 78,
+    props: { side: 16, minAngle: 60, rotation: 0, followRotate: 0, instant: true },
+  },
+  {
+    key: 'circle-mtwryds1',
+    type: 'circle' as const,
+    x: 42,
+    y: 92,
+    props: { radius: 4, clockwise: true, followRotate: 0 },
+  },
+  {
+    key: 'rhombus-mtwqn84q',
+    type: 'rhombus' as const,
+    x: 14,
+    y: 95,
+    props: { side: 24, minAngle: 60, rotation: 0, followRotate: 0, instant: true },
+  },
+  {
+    key: 'line-mtwrx6p2',
     type: 'line' as const,
-    x: 1135 - ORIGIN_X,
-    y: 249 - ORIGIN_Y,
+    x: 44,
+    y: 98,
+    props: { length: 28, rotation: 0, followRotate: 0 },
+  },
+  {
+    key: 'line-mtwqnnid',
+    type: 'line' as const,
+    x: 8,
+    y: 117,
+    props: { length: 72, rotation: 30, followRotate: 0 },
+  },
+  {
+    key: 'line-mtwqy2t8',
+    type: 'line' as const,
+    x: 8,
+    y: 118,
+    props: { length: 32, rotation: 0, followRotate: 0 },
+  },
+  {
+    key: 'rhombus-mtwqzz29',
+    type: 'rhombus' as const,
+    x: 36,
+    y: 125,
+    props: { side: 16, minAngle: 60, rotation: 0, followRotate: 0, instant: true },
+  },
+  {
+    key: 'line-mtwqq2oa',
+    type: 'line' as const,
+    x: 26,
+    y: 148,
     props: { length: 48, rotation: 0, followRotate: 0 },
   },
   {
-    key: 'diamond',
-    type: 'rhombus' as const,
-    x: 1123 - ORIGIN_X,
-    y: 201 - ORIGIN_Y,
-    props: {
-      side: 22,
-      minAngle: 60,
-      rotation: 0,
-      followRotate: 0,
-      instant: true,
-    },
+    key: 'circle-mtwr5539',
+    type: 'circle' as const,
+    x: 6,
+    y: 152,
+    props: { radius: 4, clockwise: true, followRotate: 0 },
+  },
+  {
+    key: 'line-mtwrf1tz',
+    type: 'line' as const,
+    x: 8,
+    y: 158,
+    props: { length: 58, rotation: 0, followRotate: 0 },
+  },
+  {
+    key: 'line-mtwr6ypp',
+    type: 'line' as const,
+    x: 44,
+    y: 179,
+    props: { length: 73, rotation: 0, followRotate: 0 },
+  },
+  {
+    key: 'circle-mtwqtfmd',
+    type: 'circle' as const,
+    x: 24,
+    y: 198,
+    props: { radius: 4, clockwise: true, followRotate: 0 },
+  },
+  {
+    key: 'line-mtwqw05z',
+    type: 'line' as const,
+    x: 26,
+    y: 204,
+    props: { length: 88, rotation: 0, followRotate: 0 },
+  },
+  {
+    key: 'circle-mtwrf6uf',
+    type: 'circle' as const,
+    x: 6,
+    y: 217,
+    props: { radius: 4, clockwise: true, followRotate: 0 },
+  },
+  {
+    key: 'circle-mtwr7cva',
+    type: 'circle' as const,
+    x: 40,
+    y: 253,
+    props: { radius: 6, clockwise: true, followRotate: 0 },
+  },
+  {
+    key: 'circle-mtwregzb',
+    type: 'circle' as const,
+    x: 20,
+    y: 294,
+    props: { radius: 8, clockwise: true, followRotate: 0 },
   },
 ] as const
 
-/** 首页第一根刻度：双竖线 + 斜线 + 菱形组合 */
+/** 首页第一根刻度树（绘图板场景） */
 export function HeroTickTree() {
   return (
     <div className="hero-tick-tree" aria-hidden>
@@ -72,13 +162,19 @@ export function HeroTickTree() {
               rotation={part.props.rotation}
               followRotate={part.props.followRotate}
             />
-          ) : (
+          ) : part.type === 'rhombus' ? (
             <RhombusDraw
               side={part.props.side}
               minAngle={part.props.minAngle}
               rotation={part.props.rotation}
               followRotate={part.props.followRotate}
               instant={part.props.instant}
+            />
+          ) : (
+            <CircleDraw
+              radius={part.props.radius}
+              clockwise={part.props.clockwise}
+              followRotate={part.props.followRotate}
             />
           )}
         </div>
