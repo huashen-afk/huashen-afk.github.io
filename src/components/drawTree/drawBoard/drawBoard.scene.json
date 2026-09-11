@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-11T10:07:37.242Z",
+  "updatedAt": "2026-09-11T10:30:36.589Z",
   "items": [
     {
       "id": "line-mtwqn5m3-5tqw",
       "type": "line",
       "x": 56,
-      "y": 34,
+      "y": 33,
       "props": {
         "length": 82,
         "rotation": 0,
@@ -23,7 +23,7 @@
         "minAngle": 60,
         "rotation": 0,
         "followRotate": 0,
-        "instant": true
+        "instant": false
       }
     },
     {
@@ -91,7 +91,7 @@
         "minAngle": 60,
         "rotation": 0,
         "followRotate": 0,
-        "instant": true
+        "instant": false
       }
     },
     {
@@ -104,7 +104,7 @@
         "minAngle": 60,
         "rotation": 0,
         "followRotate": 0,
-        "instant": true
+        "instant": false
       }
     },
     {
@@ -177,7 +177,7 @@
       "id": "line-mtwru98a-bd7m",
       "type": "line",
       "x": 38,
-      "y": 86,
+      "y": 84,
       "props": {
         "length": 70,
         "rotation": 30,
@@ -188,9 +188,9 @@
       "id": "line-mtwrwcg8-nkje",
       "type": "line",
       "x": 38,
-      "y": 67,
+      "y": 77,
       "props": {
-        "length": 46,
+        "length": 63,
         "rotation": 0,
         "followRotate": 0
       }
@@ -199,9 +199,9 @@
       "id": "line-mtwrx6p2-dtyv",
       "type": "line",
       "x": 74,
-      "y": 132,
+      "y": 124,
       "props": {
-        "length": 28,
+        "length": 36,
         "rotation": 0,
         "followRotate": 0
       }
@@ -210,7 +210,7 @@
       "id": "circle-mtwry723-ngta",
       "type": "circle",
       "x": 36,
-      "y": 62,
+      "y": 72,
       "props": {
         "radius": 4,
         "clockwise": true,
@@ -221,7 +221,7 @@
       "id": "circle-mtwryds1-cbba",
       "type": "circle",
       "x": 72,
-      "y": 126,
+      "y": 118,
       "props": {
         "radius": 4,
         "clockwise": true,

@@ -122,7 +122,7 @@ export function RhombusDraw({
     const canvas = canvasRef.current
     if (!canvas) return
 
-    drawnRef.current = instant ? geo.perimeter : 0
+    drawnRef.current = 0
     let frame = 0
     let running = true
     let last = performance.now()
@@ -147,8 +147,12 @@ export function RhombusDraw({
       const isVisible =
         rect.right > 0 && rect.left < vw && rect.bottom > 0 && rect.top < vh
 
-      if (canDrawRef.current && isVisible && drawnRef.current < perimeter) {
-        drawnRef.current = Math.min(perimeter, drawnRef.current + DRAW_SPEED * dt)
+      if (canDrawRef.current && isVisible) {
+        if (instant) {
+          drawnRef.current = perimeter
+        } else if (drawnRef.current < perimeter) {
+          drawnRef.current = Math.min(perimeter, drawnRef.current + DRAW_SPEED * dt)
+        }
       }
 
       if (drawnRef.current >= perimeter) notifyComplete()

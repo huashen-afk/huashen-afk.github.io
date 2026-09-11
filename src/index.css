@@ -58,7 +58,14 @@ body {
 .page-hero-line {
   width: 100%;
   display: flex;
-  justify-content: center;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.page-hero-line-seg {
+  flex: 1 1 0;
+  min-width: 0;
+  line-height: 0;
 }
 
 .page-hero-ticks {
@@ -76,6 +83,10 @@ body {
   align-items: center;
   transform: translateX(-50%);
   line-height: 0;
+}
+
+.page-hero-tick.is-last {
+  transform: translateX(-100%);
 }
 
 .page-hero-tick-shape {
